@@ -72,3 +72,35 @@ export function useWorldBankTimeseries() {
 
   return { data, loading, error, fetchAll, SERIES }
 }
+
+// Multi-country variant used by CompareModal.
+// Returns data keyed by country code: { [code]: { gdp, gdpGrowth, population, lifeExp } }
+export function useCompareTimeseries() {
+  const data    = ref(null)  // { [code]: { gdp: [...], ... } }
+  const loading = ref(false)
+  const error   = ref(null)
+
+  async function fetchAll(codes) {
+    if (!codes.length) { data.value = null; return }
+    loading.value = true
+    error.value   = null
+    data.value    = null
+    try {
+      const entries = await Promise.all(
+        codes.map(async (code) => {
+          const results = await Promise.all(
+            SERIES.map(s => fetchSeries(code, s.indicator).then(points => [s.key, points]))
+          )
+          return [code, Object.fromEntries(results)]
+        })
+      )
+      data.value = Object.fromEntries(entries)
+    } catch (e) {
+      error.value = e.message ?? 'Failed to fetch timeseries'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { data, loading, error, fetchAll, SERIES }
+}

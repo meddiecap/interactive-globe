@@ -1,6 +1,7 @@
 <script setup>
 import { watch, computed } from 'vue'
 import { useApi } from '../composables/useApi.js'
+import { useCompare } from '../composables/useCompare.js'
 import CountryHeader from './sidebar/CountryHeader.vue'
 import EconomicIndicators from './sidebar/EconomicIndicators.vue'
 import LocalTimes from './sidebar/LocalTimes.vue'
@@ -9,7 +10,15 @@ const props = defineProps({
     country: { type: Object, default: null },
     open: { type: Boolean, default: false },
 })
-defineEmits(['close', 'showDetail'])
+const emit = defineEmits(['close', 'showDetail', 'showCompare'])
+
+const { compareCountries, isInCompare, addToCompare } = useCompare()
+
+function onCompareClick() {
+    if (!props.country) return
+    if (!isInCompare(props.country.code)) addToCompare(props.country)
+    emit('showCompare')
+}
 
 const { countryData, loading, error, wbData, wbLoading, wbError, fetchCountry } = useApi()
 
@@ -83,12 +92,20 @@ const rows = computed(() => {
                     </div>
                 </dl>
 
-                <!-- Detailed info button -->
-                <button @click="$emit('showDetail')" class="w-full mt-5 py-2 rounded-lg border border-blue-700 bg-blue-950/40
-                           text-blue-300 text-sm font-medium hover:bg-blue-900/50
-                           transition-colors">
-                    Detailed info &amp; charts →
-                </button>
+                <!-- Action buttons -->
+                <div class="mt-5 flex flex-col gap-2">
+                    <button @click="$emit('showDetail')" class="w-full py-2 rounded-lg border border-blue-700 bg-blue-950/40
+                               text-blue-300 text-sm font-medium hover:bg-blue-900/50
+                               transition-colors">
+                        Detailed info &amp; charts →
+                    </button>
+                    <button @click="onCompareClick"
+                        class="w-full py-2 rounded-lg border text-sm font-medium transition-colors" :class="isInCompare(country?.code)
+                            ? 'border-emerald-700 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50'
+                            : 'border-gray-600 bg-gray-800/40 text-gray-300 hover:bg-gray-700/50'">
+                        {{ isInCompare(country?.code) ? '✓ In compare — view →' : '⊕ Add to compare' }}
+                    </button>
+                </div>
 
                 <!-- World Bank economic indicators -->
                 <EconomicIndicators :wb-data="wbData" :wb-loading="wbLoading" :wb-error="wbError" />
