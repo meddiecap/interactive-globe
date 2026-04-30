@@ -1,7 +1,8 @@
 <script setup>
-import { watch, computed, ref } from 'vue'
+import { watch, computed } from 'vue'
 import { useWorldBankTimeseries } from '../composables/useWorldBankTimeseries.js'
 import { useApi } from '../composables/useApi.js'
+import ChartCard from './modal/ChartCard.vue'
 
 const props = defineProps({
     country: { type: Object, default: null },
@@ -17,126 +18,13 @@ watch(
     (isOpen) => { if (isOpen && props.country) fetchAll(props.country.code) }
 )
 
-// ---------------------------------------------------------------------------
-// SVG sparkline builder
-// ---------------------------------------------------------------------------
-
-const SPARK_W = 280
-const SPARK_H = 64
-const SPARK_PAD = 4
-
-function buildSparkPath(points) {
-    if (!points?.length) return null
-
-    const values = points.map(p => p.value)
-    const years = points.map(p => p.year)
-    const minV = Math.min(...values)
-    const maxV = Math.max(...values)
-    const minY = Math.min(...years)
-    const maxY = Math.max(...years)
-    const rangeV = maxV - minV || 1
-    const rangeY = maxY - minY || 1
-
-    const toX = y => SPARK_PAD + ((y - minY) / rangeY) * (SPARK_W - SPARK_PAD * 2)
-    const toY = v => SPARK_H - SPARK_PAD - ((v - minV) / rangeV) * (SPARK_H - SPARK_PAD * 2)
-
-    const d = points
-        .map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(p.year).toFixed(1)},${toY(p.value).toFixed(1)}`)
-        .join(' ')
-
-    // Fill area under line
-    const firstX = toX(years[0]).toFixed(1)
-    const lastX = toX(years[years.length - 1]).toFixed(1)
-    const bottom = (SPARK_H - SPARK_PAD).toFixed(1)
-    const fill = `${d} L${lastX},${bottom} L${firstX},${bottom} Z`
-
-    return { d, fill, minV, maxV, minY, maxY, points, toX, toY }
-}
-
-// For GDP growth bar chart
-function buildGrowthBars(points) {
-    if (!points?.length) return null
-
-    const values = points.map(p => p.value)
-    const years = points.map(p => p.year)
-    const absMax = Math.max(...values.map(Math.abs), 1)
-    const minY = Math.min(...years)
-    const maxY = Math.max(...years)
-    const rangeY = maxY - minY || 1
-
-    const barW = Math.max(2, (SPARK_W - SPARK_PAD * 2) / points.length - 1)
-    const midY = SPARK_H / 2
-    const scaleH = (SPARK_H / 2 - SPARK_PAD) / absMax
-
-    return points.map(p => {
-        const x = SPARK_PAD + ((p.year - minY) / rangeY) * (SPARK_W - SPARK_PAD * 2)
-        const h = Math.abs(p.value) * scaleH
-        const y = p.value >= 0 ? midY - h : midY
-        return { x: x - barW / 2, y, w: barW, h, positive: p.value >= 0, year: p.year, value: p.value }
-    })
-}
-
 const charts = computed(() => {
     if (!data.value) return []
     return SERIES.map(s => {
         const points = data.value[s.key] ?? []
-        if (!points.length) return { ...s, empty: true }
-        if (s.key === 'gdpGrowth') {
-            return { ...s, bars: buildGrowthBars(points), points }
-        }
-        return { ...s, spark: buildSparkPath(points), points }
+        return { key: s.key, label: s.label, format: s.format, points, empty: !points.length }
     })
 })
-
-// ---------------------------------------------------------------------------
-// Hover tooltip
-// ---------------------------------------------------------------------------
-
-const tooltip = ref(null) // { chartKey, year, formatted, x, y }
-
-function clearTooltip() {
-    tooltip.value = null
-}
-
-function onSparkMove(event, chart) {
-    const svg = event.currentTarget
-    const rect = svg.getBoundingClientRect()
-    const scaleX = SPARK_W / rect.width
-    const mouseX = (event.clientX - rect.left) * scaleX
-
-    let nearest = chart.points[0]
-    let minDist = Infinity
-    for (const p of chart.points) {
-        const dist = Math.abs(chart.spark.toX(p.year) - mouseX)
-        if (dist < minDist) { minDist = dist; nearest = p }
-    }
-
-    tooltip.value = {
-        chartKey: chart.key,
-        year: nearest.year,
-        x: chart.spark.toX(nearest.year),
-        y: chart.spark.toY(nearest.value),
-        formatted: chart.format(nearest.value),
-    }
-}
-
-function onBarEnter(bar, chart) {
-    tooltip.value = {
-        chartKey: chart.key,
-        year: bar.year,
-        x: bar.x + bar.w / 2,
-        // anchor above positive bars, below midline for negative
-        y: bar.positive ? bar.y : SPARK_H / 2,
-        formatted: chart.format(bar.value),
-    }
-}
-
-// Position the tooltip label box so it stays within SVG bounds
-function tooltipBox(x, label) {
-    const w = Math.max(64, label.length * 5.8 + 12)
-    const cx = Math.min(Math.max(x, w / 2 + SPARK_PAD), SPARK_W - w / 2 - SPARK_PAD)
-    return { rx: cx - w / 2, ry: 1, rw: w, tx: cx, ty: 12 }
-}
 </script>
 
 <template>
@@ -193,102 +81,7 @@ function tooltipBox(x, label) {
 
                         <!-- Charts -->
                         <div v-else-if="charts.length" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div v-for="chart in charts" :key="chart.key"
-                                class="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
-                                <p class="text-gray-400 text-xs uppercase tracking-widest mb-3">{{ chart.label }}</p>
-
-                                <!-- No data -->
-                                <div v-if="chart.empty || (!chart.spark && !chart.bars)"
-                                    class="flex items-center justify-center h-16 text-gray-600 text-xs">
-                                    No data available
-                                </div>
-
-                                <!-- Line sparkline -->
-                                <template v-else-if="chart.spark">
-                                    <svg :width="SPARK_W" :height="SPARK_H" viewBox="0 0 280 64"
-                                        class="w-full h-auto overflow-visible cursor-crosshair"
-                                        @mousemove="onSparkMove($event, chart)" @mouseleave="clearTooltip">
-                                        <!-- Fill area -->
-                                        <path :d="chart.spark.fill" fill="rgba(96,165,250,0.12)" />
-                                        <!-- Line -->
-                                        <path :d="chart.spark.d" fill="none" stroke="#60a5fa" stroke-width="1.5"
-                                            stroke-linejoin="round" stroke-linecap="round" />
-                                        <!-- Transparent overlay to ensure mousemove fires everywhere -->
-                                        <rect x="0" y="0" :width="SPARK_W" :height="SPARK_H" fill="transparent" />
-                                        <!-- Hover indicator -->
-                                        <g v-if="tooltip?.chartKey === chart.key">
-                                            <line :x1="tooltip.x" :y1="SPARK_PAD" :x2="tooltip.x"
-                                                :y2="SPARK_H - SPARK_PAD" stroke="#94a3b8" stroke-width="0.75"
-                                                stroke-dasharray="2,2" />
-                                            <circle :cx="tooltip.x" :cy="tooltip.y" r="3" fill="#60a5fa"
-                                                stroke="#1e293b" stroke-width="1.5" />
-                                            <rect :x="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).rx"
-                                                :y="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).ry"
-                                                :width="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).rw"
-                                                height="16" fill="#1e293b" rx="3" opacity="0.95" />
-                                            <text :x="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).tx"
-                                                :y="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).ty"
-                                                fill="#e2e8f0" font-size="9" text-anchor="middle"
-                                                font-family="ui-monospace, monospace">
-                                                {{ tooltip.year }}: {{ tooltip.formatted }}
-                                            </text>
-                                        </g>
-                                    </svg>
-                                    <div class="flex justify-between text-gray-600 text-xs mt-1">
-                                        <span>{{ chart.spark.minY }}</span>
-                                        <span class="text-gray-300 font-medium">
-                                            {{ chart.format(chart.spark.maxV) }}
-                                            <span class="text-gray-600 font-normal"> peak</span>
-                                        </span>
-                                        <span>{{ chart.spark.maxY }}</span>
-                                    </div>
-                                </template>
-
-                                <!-- Growth bar chart -->
-                                <template v-else-if="chart.bars">
-                                    <svg :width="SPARK_W" :height="SPARK_H" viewBox="0 0 280 64"
-                                        class="w-full h-auto overflow-visible cursor-crosshair"
-                                        @mouseleave="clearTooltip">
-                                        <!-- Zero line -->
-                                        <line :x1="SPARK_PAD" :y1="SPARK_H / 2" :x2="SPARK_W - SPARK_PAD"
-                                            :y2="SPARK_H / 2" stroke="#374151" stroke-width="0.5" />
-                                        <!-- Bars -->
-                                        <rect v-for="bar in chart.bars" :key="bar.year" :x="bar.x" :y="bar.y"
-                                            :width="bar.w" :height="bar.h" :fill="bar.positive ? '#4ade80' : '#f87171'"
-                                            :fill-opacity="tooltip?.chartKey === chart.key && tooltip.year === bar.year ? 1 : 0.7"
-                                            rx="1" @mouseenter="onBarEnter(bar, chart)" />
-                                        <!-- Hover tooltip -->
-                                        <g v-if="tooltip?.chartKey === chart.key">
-                                            <rect :x="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).rx"
-                                                :y="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).ry"
-                                                :width="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).rw"
-                                                height="16" fill="#1e293b" rx="3" opacity="0.95" />
-                                            <text :x="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).tx"
-                                                :y="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).ty"
-                                                fill="#e2e8f0" font-size="9" text-anchor="middle"
-                                                font-family="ui-monospace, monospace">
-                                                {{ tooltip.year }}: {{ tooltip.formatted }}
-                                            </text>
-                                        </g>
-                                    </svg>
-                                    <div class="flex justify-between text-gray-600 text-xs mt-1">
-                                        <span>{{Math.min(...chart.points.map(p => p.year))}}</span>
-                                        <span class="text-gray-500">positive <span class="text-green-400">▌</span>
-                                            negative <span class="text-red-400">▌</span></span>
-                                        <span>{{Math.max(...chart.points.map(p => p.year))}}</span>
-                                    </div>
-                                </template>
-
-                                <!-- Latest value pill -->
-                                <div class="mt-2 text-right">
-                                    <span class="text-cyan-300 font-mono text-sm font-semibold">
-                                        {{ chart.format(chart.points[chart.points.length - 1]?.value) }}
-                                    </span>
-                                    <span class="text-gray-600 text-xs ml-1">
-                                        ({{ chart.points[chart.points.length - 1]?.year }})
-                                    </span>
-                                </div>
-                            </div>
+                            <ChartCard v-for="chart in charts" :key="chart.key" :chart="chart" />
                         </div>
 
                         <!-- No WB data at all (e.g. Taiwan, Kosovo) -->
