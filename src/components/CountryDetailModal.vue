@@ -1,5 +1,5 @@
 <script setup>
-import { watch, computed } from 'vue'
+import { watch, computed, ref } from 'vue'
 import { useWorldBankTimeseries } from '../composables/useWorldBankTimeseries.js'
 import { useApi } from '../composables/useApi.js'
 
@@ -87,6 +87,56 @@ const charts = computed(() => {
         return { ...s, spark: buildSparkPath(points), points }
     })
 })
+
+// ---------------------------------------------------------------------------
+// Hover tooltip
+// ---------------------------------------------------------------------------
+
+const tooltip = ref(null) // { chartKey, year, formatted, x, y }
+
+function clearTooltip() {
+    tooltip.value = null
+}
+
+function onSparkMove(event, chart) {
+    const svg = event.currentTarget
+    const rect = svg.getBoundingClientRect()
+    const scaleX = SPARK_W / rect.width
+    const mouseX = (event.clientX - rect.left) * scaleX
+
+    let nearest = chart.points[0]
+    let minDist = Infinity
+    for (const p of chart.points) {
+        const dist = Math.abs(chart.spark.toX(p.year) - mouseX)
+        if (dist < minDist) { minDist = dist; nearest = p }
+    }
+
+    tooltip.value = {
+        chartKey: chart.key,
+        year: nearest.year,
+        x: chart.spark.toX(nearest.year),
+        y: chart.spark.toY(nearest.value),
+        formatted: chart.format(nearest.value),
+    }
+}
+
+function onBarEnter(bar, chart) {
+    tooltip.value = {
+        chartKey: chart.key,
+        year: bar.year,
+        x: bar.x + bar.w / 2,
+        // anchor above positive bars, below midline for negative
+        y: bar.positive ? bar.y : SPARK_H / 2,
+        formatted: chart.format(bar.value),
+    }
+}
+
+// Position the tooltip label box so it stays within SVG bounds
+function tooltipBox(x, label) {
+    const w = Math.max(64, label.length * 5.8 + 12)
+    const cx = Math.min(Math.max(x, w / 2 + SPARK_PAD), SPARK_W - w / 2 - SPARK_PAD)
+    return { rx: cx - w / 2, ry: 1, rw: w, tx: cx, ty: 12 }
+}
 </script>
 
 <template>
@@ -155,12 +205,34 @@ const charts = computed(() => {
 
                                 <!-- Line sparkline -->
                                 <template v-else-if="chart.spark">
-                                    <svg :width="SPARK_W" :height="SPARK_H" class="w-full h-auto overflow-visible">
+                                    <svg :width="SPARK_W" :height="SPARK_H" viewBox="0 0 280 64"
+                                        class="w-full h-auto overflow-visible cursor-crosshair"
+                                        @mousemove="onSparkMove($event, chart)" @mouseleave="clearTooltip">
                                         <!-- Fill area -->
                                         <path :d="chart.spark.fill" fill="rgba(96,165,250,0.12)" />
                                         <!-- Line -->
                                         <path :d="chart.spark.d" fill="none" stroke="#60a5fa" stroke-width="1.5"
                                             stroke-linejoin="round" stroke-linecap="round" />
+                                        <!-- Transparent overlay to ensure mousemove fires everywhere -->
+                                        <rect x="0" y="0" :width="SPARK_W" :height="SPARK_H" fill="transparent" />
+                                        <!-- Hover indicator -->
+                                        <g v-if="tooltip?.chartKey === chart.key">
+                                            <line :x1="tooltip.x" :y1="SPARK_PAD" :x2="tooltip.x"
+                                                :y2="SPARK_H - SPARK_PAD" stroke="#94a3b8" stroke-width="0.75"
+                                                stroke-dasharray="2,2" />
+                                            <circle :cx="tooltip.x" :cy="tooltip.y" r="3" fill="#60a5fa"
+                                                stroke="#1e293b" stroke-width="1.5" />
+                                            <rect :x="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).rx"
+                                                :y="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).ry"
+                                                :width="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).rw"
+                                                height="16" fill="#1e293b" rx="3" opacity="0.95" />
+                                            <text :x="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).tx"
+                                                :y="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).ty"
+                                                fill="#e2e8f0" font-size="9" text-anchor="middle"
+                                                font-family="ui-monospace, monospace">
+                                                {{ tooltip.year }}: {{ tooltip.formatted }}
+                                            </text>
+                                        </g>
                                     </svg>
                                     <div class="flex justify-between text-gray-600 text-xs mt-1">
                                         <span>{{ chart.spark.minY }}</span>
@@ -174,14 +246,30 @@ const charts = computed(() => {
 
                                 <!-- Growth bar chart -->
                                 <template v-else-if="chart.bars">
-                                    <svg :width="SPARK_W" :height="SPARK_H" class="w-full h-auto overflow-visible">
+                                    <svg :width="SPARK_W" :height="SPARK_H" viewBox="0 0 280 64"
+                                        class="w-full h-auto overflow-visible cursor-crosshair"
+                                        @mouseleave="clearTooltip">
                                         <!-- Zero line -->
                                         <line :x1="SPARK_PAD" :y1="SPARK_H / 2" :x2="SPARK_W - SPARK_PAD"
                                             :y2="SPARK_H / 2" stroke="#374151" stroke-width="0.5" />
                                         <!-- Bars -->
                                         <rect v-for="bar in chart.bars" :key="bar.year" :x="bar.x" :y="bar.y"
                                             :width="bar.w" :height="bar.h" :fill="bar.positive ? '#4ade80' : '#f87171'"
-                                            fill-opacity="0.8" rx="1" />
+                                            :fill-opacity="tooltip?.chartKey === chart.key && tooltip.year === bar.year ? 1 : 0.7"
+                                            rx="1" @mouseenter="onBarEnter(bar, chart)" />
+                                        <!-- Hover tooltip -->
+                                        <g v-if="tooltip?.chartKey === chart.key">
+                                            <rect :x="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).rx"
+                                                :y="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).ry"
+                                                :width="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).rw"
+                                                height="16" fill="#1e293b" rx="3" opacity="0.95" />
+                                            <text :x="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).tx"
+                                                :y="tooltipBox(tooltip.x, tooltip.year + ': ' + tooltip.formatted).ty"
+                                                fill="#e2e8f0" font-size="9" text-anchor="middle"
+                                                font-family="ui-monospace, monospace">
+                                                {{ tooltip.year }}: {{ tooltip.formatted }}
+                                            </text>
+                                        </g>
                                     </svg>
                                     <div class="flex justify-between text-gray-600 text-xs mt-1">
                                         <span>{{Math.min(...chart.points.map(p => p.year))}}</span>
