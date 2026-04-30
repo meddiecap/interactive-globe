@@ -105,16 +105,31 @@ function clearTooltip() { tooltip.value = null }
 
 // ── Legend rows: latest values by default, hovered year on hover ─────────────
 const legendRows = computed(() => {
-    if (tooltip.value) {
-        return tooltip.value.points.map(pt => ({
+    const raw = tooltip.value
+        ? tooltip.value.points.map(pt => ({
             code: pt.code, name: pt.name, color: pt.color,
             value: pt.value, year: tooltip.value.year,
         }))
-    }
-    return props.series.map(s => {
-        const pt = s.points[s.points.length - 1]
-        return { code: s.code, name: s.name, color: s.color, value: pt?.value ?? null, year: pt?.year ?? null }
+        : props.series.map(s => {
+            const pt = s.points[s.points.length - 1]
+            return { code: s.code, name: s.name, color: s.color, value: pt?.value ?? null, year: pt?.year ?? null }
+        })
+
+    // Sort high → low; nulls sink to bottom
+    const sorted = [...raw].sort((a, b) => {
+        if (a.value == null && b.value == null) return 0
+        if (a.value == null) return 1
+        if (b.value == null) return -1
+        return b.value - a.value
     })
+
+    // Attach diff to the row above each neighbour (always positive)
+    return sorted.map((row, i) => ({
+        ...row,
+        diff: i < sorted.length - 1 && row.value != null && sorted[i + 1].value != null
+            ? row.value - sorted[i + 1].value
+            : null,
+    }))
 })
 
 const isEmpty = computed(() => props.series.every(s => !s.points.length))
@@ -163,11 +178,12 @@ const isEmpty = computed(() => props.series.every(s => !s.points.length))
 
             <!-- Legend: updates to hovered year on hover, latest values otherwise -->
             <div class="mt-2 space-y-1">
-                <div v-for="s in legendRows" :key="s.code" class="flex items-center gap-1.5 text-xs">
+                <div v-for="s in legendRows" :key="s.code" class="flex items-center gap-1.5 text-xs min-w-0">
                     <span class="inline-block w-4 h-0.5 rounded-full shrink-0" :style="{ backgroundColor: s.color }" />
-                    <span class="text-gray-500 truncate max-w-27.5">{{ s.name }}</span>
-                    <span class="font-mono ml-auto" :style="{ color: s.color }">{{ format(s.value) }}</span>
-                    <span :class="tooltip ? 'text-white' : 'text-gray-600'">({{ s.year }})</span>
+                    <span class="text-gray-500 truncate min-w-0 flex-1">{{ s.name }}</span>
+                    <span v-if="s.diff != null" class="text-gray-600 shrink-0">↕{{ format(s.diff) }}</span>
+                    <span class="font-mono shrink-0" :style="{ color: s.color }">{{ format(s.value) }}</span>
+                    <span class="shrink-0" :class="tooltip ? 'text-white' : 'text-gray-600'">({{ s.year }})</span>
                 </div>
             </div>
         </template>
