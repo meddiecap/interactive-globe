@@ -4,8 +4,8 @@ import worldData from 'world-atlas/countries-50m.json'
 import { GLOBE_RADIUS, latLonToVector3 } from '../utils/geo.js'
 import isoData from '../data/isoNumeric.js'
 
-const BORDER_RADIUS    = GLOBE_RADIUS + 0.008
-const HIGHLIGHT_RADIUS = GLOBE_RADIUS + 0.014
+const BORDER_RADIUS    = GLOBE_RADIUS + 0.001
+const HIGHLIGHT_RADIUS = GLOBE_RADIUS + 0.002
 
 // ---------------------------------------------------------------------------
 // Geometry helpers
@@ -77,7 +77,9 @@ function pointInGeometry(lon, lat, geometry) {
 
 function vector3ToLonLat(v) {
   const lat = 90 - (Math.acos(Math.max(-1, Math.min(1, v.y / GLOBE_RADIUS))) * 180) / Math.PI
-  const lon = ((Math.atan2(v.z, -v.x) * 180) / Math.PI) - 180
+  let theta = Math.atan2(v.z, -v.x)          // returns [-π, π]
+  if (theta < 0) theta += 2 * Math.PI        // normalize to [0, 2π]
+  const lon = theta * (180 / Math.PI) - 180  // back to [-180, 180]
   return [lon, lat]
 }
 
