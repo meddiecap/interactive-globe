@@ -18,6 +18,16 @@ let borders = null   // assigned after useGlobe returns (borders come from useGl
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 
+// Track mouse-down position to distinguish click from drag
+let mouseDownX = 0
+let mouseDownY = 0
+const DRAG_THRESHOLD = 5 // pixels
+
+function onMouseDown(event) {
+    mouseDownX = event.clientX
+    mouseDownY = event.clientY
+}
+
 function getMouseNDC(event) {
     const rect = containerRef.value.getBoundingClientRect()
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
@@ -45,6 +55,11 @@ function onMouseMove(event) {
 }
 
 function onClick(event) {
+    // Ignore if the mouse moved enough to be a drag
+    const dx = event.clientX - mouseDownX
+    const dy = event.clientY - mouseDownY
+    if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) return
+
     if (!globe || !borders) return
     getMouseNDC(event)
     raycaster.setFromCamera(mouse, globe.camera)
@@ -92,12 +107,13 @@ onMounted(() => {
     const result = useGlobe(containerRef.value)
     globe = result
     borders = result.borders
-
+    containerRef.value.addEventListener('mousedown', onMouseDown)
     containerRef.value.addEventListener('mousemove', onMouseMove)
     containerRef.value.addEventListener('click', onClick)
 })
 
 onUnmounted(() => {
+    containerRef.value?.removeEventListener('mousedown', onMouseDown)
     containerRef.value?.removeEventListener('mousemove', onMouseMove)
     containerRef.value?.removeEventListener('click', onClick)
     globe?.dispose()
