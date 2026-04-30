@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Ensure the Three.js canvas fills its container */
+#globe-container canvas {
+  display: block;
+}
