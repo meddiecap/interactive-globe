@@ -160,9 +160,9 @@ public/
 - [x] Real-time solar position (UTC-based declination + hour angle)
 - [x] Drag-vs-click guard
 
-## Personal Notes
-
 ---
+
+## Personal Notes
 
 You are my ruthless mentor and sparring partner. Your job is to find the truth and tell it to me straight. Hurt my feelings if needed.
 
