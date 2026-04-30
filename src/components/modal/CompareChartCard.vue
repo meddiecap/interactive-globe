@@ -172,7 +172,18 @@ const isEmpty = computed(() => props.series.every(s => !s.points.length))
             <div class="flex justify-between text-gray-600 text-xs mt-1.5">
                 <span>{{ yearRange.min }}</span>
                 <span v-if="isSharedScale" class="text-gray-600">shared scale</span>
-                <span v-else class="text-gray-600">normalised</span>
+                <span v-else class="relative group cursor-help text-gray-600 underline decoration-dotted">
+                    normalised
+                    <span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56
+                                 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2
+                                 text-gray-300 text-[11px] leading-snug shadow-xl
+                                 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                        Each country's line is scaled independently to its own min/max.
+                        This shows the <span class="text-white">trend shape</span> clearly,
+                        but crossing lines do <span class="text-white">not</span> mean one country
+                        overtook the other in absolute terms.
+                    </span>
+                </span>
                 <span>{{ yearRange.max }}</span>
             </div>
 
