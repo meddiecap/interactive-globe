@@ -34,7 +34,7 @@ export function useApi() {
               .map((c) => `${c.name} (${c.symbol ?? '?'})`)
               .join(', ')
           : 'N/A',
-        timezones: data.timezones?.slice(0, 2).join(', ') ?? 'N/A',
+        timezones: data.timezones ?? [],
       }
     } catch (e) {
       error.value = e.message ?? 'Failed to fetch country data'
