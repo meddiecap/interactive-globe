@@ -5,6 +5,7 @@ import Globe from './components/Globe.vue'
 import Sidebar from './components/Sidebar.vue'
 import SearchBar from './components/SearchBar.vue'
 import Overlay from './components/Overlay.vue'
+import CountryDetailModal from './components/CountryDetailModal.vue'
 
 const { loadCountries } = useCountriesStore()
 onMounted(() => loadCountries())
@@ -12,11 +13,13 @@ onMounted(() => loadCountries())
 const globeRef = ref(null)
 const selectedCountry = ref(null)
 const sidebarOpen = ref(false)
+const detailOpen = ref(false)
 const isRotating = ref(true)
 
 function onCountrySelected(country) {
     selectedCountry.value = country
     sidebarOpen.value = true
+    detailOpen.value = false
 }
 
 function onSearchSelect(country) {
@@ -52,7 +55,11 @@ function toggleRotation() {
         </div>
 
         <!-- Slide-in sidebar -->
-        <Sidebar :country="selectedCountry" :open="sidebarOpen" @close="sidebarOpen = false" />
+        <Sidebar :country="selectedCountry" :open="sidebarOpen" @close="sidebarOpen = false"
+            @showDetail="detailOpen = true" />
+
+        <!-- Country detail modal -->
+        <CountryDetailModal :country="selectedCountry" :open="detailOpen" @close="detailOpen = false" />
 
         <!-- Instruction overlay (dismissible) -->
         <Overlay />

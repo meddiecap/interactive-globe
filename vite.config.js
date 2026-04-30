@@ -4,4 +4,13 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
+  server: {
+    proxy: {
+      '/wb-api': {
+        target: 'https://api.worldbank.org/v2/country',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/wb-api/, ''),
+      },
+    },
+  },
 })

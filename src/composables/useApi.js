@@ -23,13 +23,15 @@ async function fetchWbIndicator(code, indicator) {
   }
 }
 
+// Module-level singletons — shared across all callers (Sidebar, Modal, etc.)
+const countryData = ref(null)
+const loading     = ref(false)
+const error       = ref(null)
+const wbData      = ref(null)
+const wbLoading   = ref(false)
+const wbError     = ref(null)
+
 export function useApi() {
-  const countryData = ref(null)
-  const loading     = ref(false)
-  const error       = ref(null)
-  const wbData      = ref(null)
-  const wbLoading   = ref(false)
-  const wbError     = ref(null)
 
   async function fetchWorldBankStats(code) {
     wbLoading.value = true
