@@ -2,8 +2,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as THREE from 'three'
 import { useGlobe } from '../composables/useGlobe.js'
-import { latLonToVector3, countriesData } from '../composables/useCountries.js'
+import { latLonToVector3 } from '../composables/useCountries.js'
 import { GLOBE_RADIUS } from '../utils/geo.js'
+import { useCountriesStore } from '../composables/useCountriesStore.js'
+
+const { countries: countriesData } = useCountriesStore()
 
 const emit = defineEmits(['countrySelected'])
 
@@ -34,10 +37,10 @@ function onMouseMove(event) {
     const point = getGlobePoint()
     if (!point) {
         containerRef.value.style.cursor = 'default'
-        borders.updateHover(null, countriesData)
+        borders.updateHover(null, countriesData.value)
         return
     }
-    const country = borders.updateHover(point, countriesData)
+    const country = borders.updateHover(point, countriesData.value)
     containerRef.value.style.cursor = country ? 'pointer' : 'default'
 }
 
@@ -47,7 +50,7 @@ function onClick(event) {
     raycaster.setFromCamera(mouse, globe.camera)
     const point = getGlobePoint()
     if (!point) return
-    const country = borders.confirmClick(point, countriesData)
+    const country = borders.confirmClick(point, countriesData.value)
     if (country) {
         animateCameraTo(country)
         emit('countrySelected', country)
@@ -79,6 +82,7 @@ function animateCameraTo(country) {
 
 /** Exposed so App.vue can trigger focus from the search bar. */
 function focusCountry(country) {
+    borders?.confirmClickByCode(country.code)
     animateCameraTo(country)
     emit('countrySelected', country)
 }

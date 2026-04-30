@@ -164,7 +164,21 @@ export function useBorders(scene) {
     return getCountryByFeature(feature, countriesData)
   }
 
-  return { updateHover, confirmClick }
+  function confirmClickByCode(alpha2) {
+    const feature = features.find((f) => {
+      const numericId = String(f.id).padStart(3, '0')
+      return isoData[numericId] === alpha2
+    })
+    if (!feature) return
+    if (feature.id !== activeId) {
+      clearActive()
+      activeId    = feature.id
+      activeLines = buildHighlight(feature, activeMaterial, HIGHLIGHT_RADIUS + 0.004)
+      if (activeLines) scene.add(activeLines)
+    }
+  }
+
+  return { updateHover, confirmClick, confirmClickByCode }
 }
 
 // ---------------------------------------------------------------------------
