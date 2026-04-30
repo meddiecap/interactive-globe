@@ -43,7 +43,9 @@ function onBlur() {
         bg-gray-900 border border-gray-700 rounded-lg overflow-hidden shadow-2xl
       ">
             <li v-for="country in filtered" :key="country.code" @mousedown.prevent="select(country)"
-                class="px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 cursor-pointer transition-colors">
+                class="flex items-center gap-2 px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 cursor-pointer transition-colors">
+                <img v-if="country.flag" :src="country.flag" :alt="country.name"
+                    class="w-5 h-3.5 object-cover rounded-sm shrink-0" />
                 {{ country.name }}
             </li>
         </ul>

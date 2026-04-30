@@ -9,7 +9,7 @@ export function useCountriesStore() {
     if (loaded) return
     try {
       const res = await fetch(
-        'https://restcountries.com/v3.1/all?fields=name,cca2,latlng'
+        'https://restcountries.com/v3.1/all?fields=name,cca2,latlng,flags'
       )
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
@@ -20,6 +20,7 @@ export function useCountriesStore() {
           code: c.cca2,
           lat:  c.latlng[0],
           lon:  c.latlng[1],
+          flag: c.flags?.svg || c.flags?.png || '',
         }))
         .sort((a, b) => a.name.localeCompare(b.name))
       loaded = true
