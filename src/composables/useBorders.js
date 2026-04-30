@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import * as topojson from 'topojson-client'
-import worldData from 'world-atlas/countries-110m.json'
+import worldData from 'world-atlas/countries-50m.json'
 import { GLOBE_RADIUS, latLonToVector3 } from '../utils/geo.js'
 import isoData from '../data/isoNumeric.js'
 
