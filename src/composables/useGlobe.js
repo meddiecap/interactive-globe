@@ -60,9 +60,6 @@ export function useGlobe(container) {
     }
   )
 
-  // Country borders overlay
-  useBorders(scene)
-
   // Thin atmosphere glow
   const atmosphereMesh = new THREE.Mesh(
     new THREE.SphereGeometry(GLOBE_RADIUS + 0.06, 64, 64),
@@ -93,6 +90,9 @@ export function useGlobe(container) {
   }
   window.addEventListener('resize', onResize)
 
+  // Country borders overlay — returns { updateHover, confirmClick }
+  const borders = useBorders(scene)
+
   // Animation loop
   let animFrameId
   function animate() {
@@ -112,5 +112,5 @@ export function useGlobe(container) {
     }
   }
 
-  return { scene, camera, renderer, earthMesh, controls, dispose }
+  return { scene, camera, renderer, earthMesh, controls, borders, dispose }
 }
