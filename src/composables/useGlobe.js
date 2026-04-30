@@ -79,7 +79,7 @@ export function useGlobe(container) {
   scene.add(earthMesh)
 
   new THREE.TextureLoader().load(
-    '/textures/8k_earth_daymap.jpg',
+    `${import.meta.env.BASE_URL}textures/8k_earth_daymap.jpg`,
     (texture) => {
       earthMaterial.map = texture
       earthMaterial.color.set(0xffffff)
