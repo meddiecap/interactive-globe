@@ -22,10 +22,37 @@ export function useGlobe(container) {
   container.appendChild(renderer.domElement)
 
   // Lighting
-  scene.add(new THREE.AmbientLight(0x333344, 1.5))
-  const sunLight = new THREE.DirectionalLight(0xffffff, 2)
+  scene.add(new THREE.AmbientLight(0x222233, 1.2))
+  const sunLight = new THREE.DirectionalLight(0xfff4e0, 2.2)
   sunLight.position.set(5, 3, 5)
   scene.add(sunLight)
+
+  /**
+   * Update the sun light direction to match the real-world sun position
+   * for the current UTC time. Uses a simplified solar position formula:
+   *  - Declination: sinusoidal approximation (~±23.45°)
+   *  - Hour angle: based on UTC time (0h = sun over Greenwich)
+   */
+  function updateSunPosition() {
+    const now    = new Date()
+    const utcH   = now.getUTCHours() + now.getUTCMinutes() / 60
+    const dayOfYear = Math.floor(
+      (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+       Date.UTC(now.getUTCFullYear(), 0, 0)) / 86400000
+    )
+    // Solar declination in radians
+    const decl = (23.45 * Math.PI / 180) *
+      Math.sin((2 * Math.PI / 365) * (dayOfYear - 81))
+    // Hour angle: 0h UTC → sun directly over lon 0° (prime meridian)
+    // Each hour = 15° westward
+    const hourAngle = ((utcH / 24) * 2 - 1) * Math.PI  // -π (midnight) to +π
+
+    // Convert to Cartesian (same convention as latLonToVector3)
+    const x = -Math.cos(decl) * Math.cos(hourAngle)
+    const y =  Math.sin(decl)
+    const z =  Math.cos(decl) * Math.sin(hourAngle)
+    sunLight.position.set(x * 10, y * 10, z * 10)
+  }
 
   // Stars particle system
   const starsPositions = new Float32Array(3000 * 3)
@@ -97,10 +124,15 @@ export function useGlobe(container) {
   let animFrameId
   function animate() {
     animFrameId = requestAnimationFrame(animate)
+    updateSunPosition()
     controls.update()
     renderer.render(scene, camera)
   }
   animate()
+
+  function toggleRotation() {
+    controls.autoRotate = !controls.autoRotate
+  }
 
   function dispose() {
     cancelAnimationFrame(animFrameId)
@@ -112,5 +144,5 @@ export function useGlobe(container) {
     }
   }
 
-  return { scene, camera, renderer, earthMesh, controls, borders, dispose }
+  return { scene, camera, renderer, earthMesh, controls, borders, toggleRotation, dispose }
 }

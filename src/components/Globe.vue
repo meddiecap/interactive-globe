@@ -101,7 +101,12 @@ function focusCountry(country) {
     animateCameraTo(country)
     emit('countrySelected', country)
 }
-defineExpose({ focusCountry })
+
+function toggleRotation() {
+    globe?.toggleRotation()
+}
+
+defineExpose({ focusCountry, toggleRotation })
 
 onMounted(() => {
     const result = useGlobe(containerRef.value)
