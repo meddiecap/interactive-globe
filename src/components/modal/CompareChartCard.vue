@@ -103,13 +103,19 @@ function onMouseMove(event) {
 
 function clearTooltip() { tooltip.value = null }
 
-// ── Legend: latest value per series ─────────────────────────────────────────
-const latestPerSeries = computed(() =>
-    props.series.map(s => {
+// ── Legend rows: latest values by default, hovered year on hover ─────────────
+const legendRows = computed(() => {
+    if (tooltip.value) {
+        return tooltip.value.points.map(pt => ({
+            code: pt.code, name: pt.name, color: pt.color,
+            value: pt.value, year: tooltip.value.year,
+        }))
+    }
+    return props.series.map(s => {
         const pt = s.points[s.points.length - 1]
         return { code: s.code, name: s.name, color: s.color, value: pt?.value ?? null, year: pt?.year ?? null }
     })
-)
+})
 
 const isEmpty = computed(() => props.series.every(s => !s.points.length))
 </script>
@@ -147,16 +153,6 @@ const isEmpty = computed(() => props.series.every(s => !s.points.length))
                 </g>
             </svg>
 
-            <!-- Tooltip values (HTML, below SVG) -->
-            <div v-if="tooltip" class="mt-1 bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs space-y-0.5">
-                <p class="text-gray-500 font-medium mb-1">{{ tooltip.year }}</p>
-                <div v-for="pt in tooltip.points" :key="pt.code" class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: pt.color }" />
-                    <span class="text-gray-400 truncate max-w-25">{{ pt.name }}</span>
-                    <span class="font-mono text-gray-200 ml-auto">{{ format(pt.value) }}</span>
-                </div>
-            </div>
-
             <!-- Year range axis labels -->
             <div class="flex justify-between text-gray-600 text-xs mt-1.5">
                 <span>{{ yearRange.min }}</span>
@@ -165,13 +161,13 @@ const isEmpty = computed(() => props.series.every(s => !s.points.length))
                 <span>{{ yearRange.max }}</span>
             </div>
 
-            <!-- Legend: country name + latest value -->
+            <!-- Legend: updates to hovered year on hover, latest values otherwise -->
             <div class="mt-2 space-y-1">
-                <div v-for="s in latestPerSeries" :key="s.code" class="flex items-center gap-1.5 text-xs">
+                <div v-for="s in legendRows" :key="s.code" class="flex items-center gap-1.5 text-xs">
                     <span class="inline-block w-4 h-0.5 rounded-full shrink-0" :style="{ backgroundColor: s.color }" />
                     <span class="text-gray-500 truncate max-w-27.5">{{ s.name }}</span>
                     <span class="font-mono ml-auto" :style="{ color: s.color }">{{ format(s.value) }}</span>
-                    <span class="text-gray-600">({{ s.year }})</span>
+                    <span :class="tooltip ? 'text-white' : 'text-gray-600'">({{ s.year }})</span>
                 </div>
             </div>
         </template>
