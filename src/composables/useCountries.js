@@ -1,20 +1,11 @@
 import * as THREE from 'three'
-import { GLOBE_RADIUS } from './useGlobe.js'
+import { GLOBE_RADIUS, latLonToVector3 } from '../utils/geo.js'
 import countriesData from '../data/countries.json'
+
+export { latLonToVector3 }
 
 // Markers sit slightly above the globe surface
 const MARKER_RADIUS = GLOBE_RADIUS + 0.055
-
-/** Convert geographic coordinates to a point on the sphere. */
-export function latLonToVector3(lat, lon, radius = GLOBE_RADIUS) {
-  const phi = (90 - lat) * (Math.PI / 180)
-  const theta = (lon + 180) * (Math.PI / 180)
-  return new THREE.Vector3(
-    -radius * Math.sin(phi) * Math.cos(theta),
-    radius * Math.cos(phi),
-    radius * Math.sin(phi) * Math.sin(theta)
-  )
-}
 
 const COLOR_DEFAULT = 0xff6600
 const COLOR_HOVER   = 0xffdd00

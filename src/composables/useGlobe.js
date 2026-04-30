@@ -1,7 +1,9 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { useBorders } from './useBorders.js'
+import { GLOBE_RADIUS } from '../utils/geo.js'
 
-export const GLOBE_RADIUS = 2
+export { GLOBE_RADIUS }
 
 export function useGlobe(container) {
   const scene = new THREE.Scene()
@@ -50,13 +52,16 @@ export function useGlobe(container) {
   scene.add(earthMesh)
 
   new THREE.TextureLoader().load(
-    'https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg',
+    '/textures/8k_earth_daymap.jpg',
     (texture) => {
       earthMaterial.map = texture
       earthMaterial.color.set(0xffffff)
       earthMaterial.needsUpdate = true
     }
   )
+
+  // Country borders overlay
+  useBorders(scene)
 
   // Thin atmosphere glow
   const atmosphereMesh = new THREE.Mesh(

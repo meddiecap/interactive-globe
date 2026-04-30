@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "three": "^0.174.0",
-    "vue": "^3.5.13"
+    "topojson-client": "^3.1.0",
+    "vue": "^3.5.13",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.4",
