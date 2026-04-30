@@ -1,5 +1,6 @@
 <script setup>
 import { watch, computed, ref, onUnmounted } from 'vue'
+import ct from 'countries-and-timezones'
 import { useApi } from '../composables/useApi.js'
 
 const props = defineProps({
@@ -33,39 +34,67 @@ const rows = computed(() => {
 })
 
 // ---------------------------------------------------------------------------
-// Live local time
+// Live local time — IANA-based (DST-correct, includes territory labels)
 // ---------------------------------------------------------------------------
 
 /**
- * Parse a "UTC+HH:MM" or "UTC-HH:MM" or "UTC" string into total minutes offset.
+ * Convert an IANA name like "Pacific/Marquesas" or "America/Indiana/Indianapolis"
+ * to a readable label: last path segment, underscores → spaces.
  */
-function parseUtcOffset(tz) {
-    if (!tz || tz === 'UTC') return 0
-    const m = tz.match(/UTC([+-])(\d{1,2}):(\d{2})/)
-    if (!m) return 0
-    const sign = m[1] === '+' ? 1 : -1
-    const hours = parseInt(m[2], 10)
-    const minutes = parseInt(m[3], 10)
-    return sign * (hours * 60 + minutes)
+function ianaToLabel(ianaName) {
+    const parts = ianaName.split('/')
+    return parts[parts.length - 1].replace(/_/g, ' ')
 }
 
-function getLocalTime(tzString) {
-    const offsetMinutes = parseUtcOffset(tzString)
-    const utcMs = Date.now() + new Date().getTimezoneOffset() * 60000
-    const localMs = utcMs + offsetMinutes * 60000
-    const d = new Date(localMs)
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+function getIanaTime(ianaName) {
+    try {
+        return new Intl.DateTimeFormat([], {
+            timeZone: ianaName,
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false,
+        }).format(new Date())
+    } catch {
+        return '--:--:--'
+    }
 }
 
 const tick = ref(0)
 const timer = setInterval(() => { tick.value++ }, 1000)
 onUnmounted(() => clearInterval(timer))
 
+// Max labels to show inline before showing "+ N more"
+const MAX_LABELS = 3
+
 const localTimes = computed(() => {
     tick.value // reactive dependency — re-runs every second
-    const tzs = countryData.value?.timezones
-    if (!tzs?.length) return []
-    return tzs.map((tz) => ({ tz, time: getLocalTime(tz) }))
+    const code = props.country?.code
+    if (!code) return []
+    const info = ct.getCountry(code)
+    if (!info?.timezones?.length) return []
+
+    // Build one entry per IANA name, then group by current time value
+    const entries = info.timezones.map((ianaName) => {
+        const tzInfo = ct.getTimezone(ianaName)
+        return {
+            ianaName,
+            label: ianaToLabel(ianaName),
+            utcOffset: tzInfo?.utcOffsetStr ?? '',
+            time: getIanaTime(ianaName),
+        }
+    })
+
+    // Group entries that share the exact same time string
+    const groups = new Map()
+    for (const entry of entries) {
+        const key = entry.time
+        if (!groups.has(key)) {
+            groups.set(key, { time: entry.time, utcOffset: entry.utcOffset, labels: [] })
+        }
+        groups.get(key).labels.push(entry.label)
+    }
+
+    // Convert to array, sort by UTC offset string so groups appear west→east
+    return [...groups.values()].sort((a, b) => a.utcOffset.localeCompare(b.utcOffset))
 })
 </script>
 
@@ -125,11 +154,19 @@ const localTimes = computed(() => {
                 <!-- Local time(s) -->
                 <div v-if="localTimes.length" class="mt-4 rounded-lg border border-gray-700 bg-gray-900/60 p-4">
                     <p class="text-gray-400 text-xs uppercase tracking-widest mb-3">Local time</p>
-                    <div class="space-y-2">
-                        <div v-for="entry in localTimes" :key="entry.tz"
-                            class="flex items-center justify-between gap-3">
-                            <span class="text-gray-500 text-xs">{{ entry.tz }}</span>
-                            <span class="font-mono text-blue-300 text-sm tabular-nums">{{ entry.time }}</span>
+                    <div class="space-y-3">
+                        <div v-for="group in localTimes" :key="group.time"
+                            class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="text-gray-200 text-xs font-medium leading-snug">
+                                    {{ group.labels.slice(0, MAX_LABELS).join(', ') }}<span
+                                        v-if="group.labels.length > MAX_LABELS" class="ml-1 text-gray-500">+{{
+                                        group.labels.length - MAX_LABELS }} more</span>
+                                </p>
+                                <p class="text-gray-500 text-xs mt-0.5">{{ group.utcOffset }}</p>
+                            </div>
+                            <span class="font-mono text-blue-300 text-sm tabular-nums shrink-0 mt-0.5">{{ group.time
+                                }}</span>
                         </div>
                     </div>
                 </div>
