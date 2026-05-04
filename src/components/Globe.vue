@@ -78,7 +78,8 @@ function animateCameraTo(country) {
     const { camera, controls } = globe
     controls.autoRotate = false
 
-    const target = latLonToVector3(country.lat, country.lon, GLOBE_RADIUS * 2.2)
+    const currentDistance = camera.position.length()
+    const target = latLonToVector3(country.lat, country.lon, currentDistance)
     const startPos = camera.position.clone()
     const start = performance.now()
     const duration = 1100
