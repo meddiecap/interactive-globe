@@ -24,6 +24,7 @@ let mouseDownY = 0
 const DRAG_THRESHOLD = 5 // pixels
 
 function onMouseDown(event) {
+    stopFlyTo()
     mouseDownX = event.clientX
     mouseDownY = event.clientY
 }
@@ -72,19 +73,33 @@ function onClick(event) {
     }
 }
 
+let cancelFlyTo = null
+
+function stopFlyTo() {
+    if (cancelFlyTo) {
+        cancelFlyTo()
+        cancelFlyTo = null
+    }
+}
+
 /** Smoothly fly the camera toward the selected country. */
 function animateCameraTo(country) {
     if (!country.lat && !country.lon) return
     const { camera, controls } = globe
     controls.autoRotate = false
 
+    stopFlyTo()
+
     const currentDistance = camera.position.length()
     const target = latLonToVector3(country.lat, country.lon, currentDistance)
     const startPos = camera.position.clone()
     const start = performance.now()
     const duration = 1100
+    let cancelled = false
+    cancelFlyTo = () => { cancelled = true }
 
     function step() {
+        if (cancelled) return
         const t = Math.min((performance.now() - start) / duration, 1)
         const ease = 1 - Math.pow(1 - t, 3)
         camera.position.lerpVectors(startPos, target, ease)
@@ -92,6 +107,7 @@ function animateCameraTo(country) {
         controls.target.set(0, 0, 0)
         controls.update()
         if (t < 1) requestAnimationFrame(step)
+        else cancelFlyTo = null
     }
     step()
 }
@@ -116,12 +132,14 @@ onMounted(() => {
     containerRef.value.addEventListener('mousedown', onMouseDown)
     containerRef.value.addEventListener('mousemove', onMouseMove)
     containerRef.value.addEventListener('click', onClick)
+    containerRef.value.addEventListener('wheel', stopFlyTo, { passive: true })
 })
 
 onUnmounted(() => {
     containerRef.value?.removeEventListener('mousedown', onMouseDown)
     containerRef.value?.removeEventListener('mousemove', onMouseMove)
     containerRef.value?.removeEventListener('click', onClick)
+    containerRef.value?.removeEventListener('wheel', stopFlyTo)
     globe?.dispose()
 })
 </script>
