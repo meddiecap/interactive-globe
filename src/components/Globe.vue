@@ -24,6 +24,7 @@ let mouseDownY = 0
 const DRAG_THRESHOLD = 5 // pixels
 
 function onMouseDown(event) {
+    // Cancel any in-progress fly-to so the user's drag/zoom doesn't fight the animation.
     stopFlyTo()
     mouseDownX = event.clientX
     mouseDownY = event.clientY
@@ -73,8 +74,10 @@ function onClick(event) {
     }
 }
 
+// Holds a cancel callback while a fly-to animation is running; null when idle.
 let cancelFlyTo = null
 
+/** Stop an in-progress fly-to animation so user input takes over immediately. */
 function stopFlyTo() {
     if (cancelFlyTo) {
         cancelFlyTo()
@@ -88,13 +91,16 @@ function animateCameraTo(country) {
     const { camera, controls } = globe
     controls.autoRotate = false
 
+    // Cancel a previous fly-to in case the user clicks a second country mid-animation.
     stopFlyTo()
 
+    // Preserve the current zoom level — only change the viewing direction.
     const currentDistance = camera.position.length()
     const target = latLonToVector3(country.lat, country.lon, currentDistance)
     const startPos = camera.position.clone()
     const start = performance.now()
     const duration = 1100
+    // Flag checked every frame; flipped by stopFlyTo() to abort the loop.
     let cancelled = false
     cancelFlyTo = () => { cancelled = true }
 
