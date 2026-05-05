@@ -2,7 +2,7 @@
 
 A portfolio-quality, browser-based 3D globe for exploring country data. Built with Vue 3, Three.js, and Tailwind CSS v4.
 
-![Globe screenshot placeholder](public/textures/8k_earth_daymap.jpg)
+![Interactive Globe](public/preview.jpg)
 
 ---
 
