@@ -18,8 +18,6 @@ A portfolio-quality, browser-based 3D globe for exploring country data. Built wi
 - **25-year sparkline charts** — full-screen modal with SVG area charts + bar charts for GDP, population, life expectancy, and GDP growth
 - **Country comparison** — compare up to 4 countries side-by-side with multi-series SVG line charts and distinct per-country colors
 - **Search bar** — live typeahead over ~250 countries; selecting one flies the camera there
-- **Rotate / Pause** — toggle globe auto-rotation
-- **Drag-vs-click guard** — pointer movement > 5 px is treated as an orbit drag, never a selection
 
 ---
 
