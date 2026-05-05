@@ -1,4 +1,4 @@
-# 🌍 Interactive Country Globe
+# 🌍 Interactive Globe
 
 A portfolio-quality, browser-based 3D globe for exploring country data. Built with Vue 3, Three.js, and Tailwind CSS v4.
 

@@ -1,4 +1,4 @@
-# Copilot Instructions — Interactive Country Globe
+# Copilot Instructions — Interactive Globe
 
 ## Project identity
 

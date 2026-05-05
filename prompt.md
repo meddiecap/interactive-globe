@@ -2,7 +2,7 @@ You are a senior JavaScript / Three.js developer.
 
 Create a portfolio-quality proof-of-concept called:
 
-Interactive Country Globe
+Interactive Globe
 
 The goal is to build a simple but impressive 3D globe where users can explore countries and view country information from external APIs.
 

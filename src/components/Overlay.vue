@@ -7,7 +7,7 @@ const visible = ref(true)
 <template>
     <Transition name="fade">
         <div v-if="visible" class="
-        fixed bottom-8 left-8 z-10 max-w-xs
+        fixed bottom-14 left-8 z-10 max-w-xs
         bg-gray-900/85 backdrop-blur-sm
         border border-gray-700 rounded-xl p-4
         text-sm text-gray-300 shadow-xl
