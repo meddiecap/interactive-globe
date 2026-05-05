@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '/interactive-country-globe/',
+  base: '/interactive-globe/',
   plugins: [vue(), tailwindcss()],
   server: {
     proxy: {

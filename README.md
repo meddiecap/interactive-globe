@@ -60,8 +60,8 @@ No auth tokens. No paid APIs. No backend.
 ### Install & run
 
 ```bash
-git clone https://github.com/your-username/interactive-country-globe.git
-cd interactive-country-globe
+git clone https://github.com/your-username/interactive-globe.git
+cd interactive-globe
 npm install
 npm run dev
 ```
