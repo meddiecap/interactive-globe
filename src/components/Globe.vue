@@ -2,8 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as THREE from 'three'
 import { useGlobe } from '../composables/useGlobe.js'
-import { latLonToVector3 } from '../composables/useCountries.js'
-import { GLOBE_RADIUS } from '../utils/geo.js'
+import { latLonToVector3, GLOBE_RADIUS } from '../utils/geo.js'
 import { useCountriesStore } from '../composables/useCountriesStore.js'
 
 const { countries: countriesData } = useCountriesStore()
