@@ -6,6 +6,7 @@ import isoData from '../data/isoNumeric.js'
 
 const BORDER_RADIUS    = GLOBE_RADIUS + 0.001
 const HIGHLIGHT_RADIUS = GLOBE_RADIUS + 0.002
+const ACTIVE_RADIUS    = GLOBE_RADIUS + 0.006
 
 // ---------------------------------------------------------------------------
 // Geometry helpers
@@ -46,6 +47,12 @@ function makeLineSegments(positions, material) {
   const geo = new THREE.BufferGeometry()
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   return new THREE.LineSegments(geo, material)
+}
+
+function buildHighlight(feature, material, radius) {
+  const positions = featureToPositions(feature, radius)
+  if (!positions.length) return null
+  return makeLineSegments(positions, material)
 }
 
 // ---------------------------------------------------------------------------
@@ -112,12 +119,6 @@ export function useBorders(scene) {
   let hoveredId   = null
   let activeId    = null
 
-  function buildHighlight(feature, material, radius) {
-    const positions = featureToPositions(feature, radius)
-    if (!positions.length) return null
-    return makeLineSegments(positions, material)
-  }
-
   function clearHover() {
     if (hoverLines) { scene.remove(hoverLines); hoverLines = null }
     hoveredId = null
@@ -132,10 +133,14 @@ export function useBorders(scene) {
   // Public API
   // ---------------------------------------------------------------------------
 
+  function featureAtPoint(point3D) {
+    const [lon, lat] = vector3ToLonLat(point3D)
+    return features.find((f) => pointInGeometry(lon, lat, f.geometry)) ?? null
+  }
+
   function updateHover(point3D, countriesData) {
     if (!point3D) { clearHover(); return null }
-    const [lon, lat] = vector3ToLonLat(point3D)
-    const feature = features.find((f) => pointInGeometry(lon, lat, f.geometry))
+    const feature = featureAtPoint(point3D)
 
     if (!feature) { clearHover(); return null }
     if (feature.id === hoveredId) return getCountryByFeature(feature, countriesData)
@@ -150,14 +155,13 @@ export function useBorders(scene) {
 
   function confirmClick(point3D, countriesData) {
     if (!point3D) return null
-    const [lon, lat] = vector3ToLonLat(point3D)
-    const feature = features.find((f) => pointInGeometry(lon, lat, f.geometry))
+    const feature = featureAtPoint(point3D)
     if (!feature) return null
 
     if (feature.id !== activeId) {
       clearActive()
       activeId    = feature.id
-      activeLines = buildHighlight(feature, activeMaterial, HIGHLIGHT_RADIUS + 0.004)
+      activeLines = buildHighlight(feature, activeMaterial, ACTIVE_RADIUS)
       if (activeLines) scene.add(activeLines)
     }
 
@@ -173,7 +177,7 @@ export function useBorders(scene) {
     if (feature.id !== activeId) {
       clearActive()
       activeId    = feature.id
-      activeLines = buildHighlight(feature, activeMaterial, HIGHLIGHT_RADIUS + 0.004)
+      activeLines = buildHighlight(feature, activeMaterial, ACTIVE_RADIUS)
       if (activeLines) scene.add(activeLines)
     }
   }

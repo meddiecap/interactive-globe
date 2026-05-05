@@ -3,8 +3,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { useBorders } from './useBorders.js'
 import { GLOBE_RADIUS } from '../utils/geo.js'
 
-export { GLOBE_RADIUS }
-
 export function useGlobe(container) {
   const scene = new THREE.Scene()
 
