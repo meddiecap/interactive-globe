@@ -38,7 +38,8 @@ function toggleRotation() {
     <div class="relative w-screen h-screen bg-black overflow-hidden">
 
         <!-- Three.js canvas fills the entire viewport -->
-        <Globe ref="globeRef" class="absolute inset-0" @countrySelected="onCountrySelected" />
+        <Globe ref="globeRef" class="absolute inset-0" @countrySelected="onCountrySelected"
+            @rotationStopped="isRotating = false" />
 
         <!-- Top-left toolbar -->
         <div class="absolute top-6 left-6 z-10 flex items-center gap-4">

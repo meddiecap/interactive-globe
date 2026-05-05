@@ -8,7 +8,7 @@ import { useCountriesStore } from '../composables/useCountriesStore.js'
 
 const { countries: countriesData } = useCountriesStore()
 
-const emit = defineEmits(['countrySelected'])
+const emit = defineEmits(['countrySelected', 'rotationStopped'])
 
 const containerRef = ref(null)
 
@@ -89,7 +89,10 @@ function stopFlyTo() {
 function animateCameraTo(country) {
     if (!country.lat && !country.lon) return
     const { camera, controls } = globe
-    controls.autoRotate = false
+    if (controls.autoRotate) {
+        controls.autoRotate = false
+        emit('rotationStopped')
+    }
 
     // Cancel a previous fly-to in case the user clicks a second country mid-animation.
     stopFlyTo()
