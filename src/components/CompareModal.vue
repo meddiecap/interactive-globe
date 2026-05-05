@@ -40,7 +40,9 @@ const filteredCountries = computed(() => {
 function selectCountry(country) {
     addToCompare(country)
     searchQuery.value = ''
-    searchOpen.value = false
+    // Don't close searchOpen — the input keeps focus after selection, so @focus
+    // won't re-fire. The dropdown hides naturally because filteredCountries is
+    // empty when the query is cleared, and reopens as soon as the user types again.
 }
 
 function blurSearch() {
