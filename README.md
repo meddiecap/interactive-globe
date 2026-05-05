@@ -48,6 +48,10 @@ No Pinia, no Vue Router, no charting library. Charts are hand-rolled SVG.
 
 No auth tokens. No paid APIs. No backend.
 
+## Texture Credits
+
+The Earth surface texture (`public/textures/8k_earth_daymap.jpg`) is the **8K Earth Day Map** from [Solar System Scope](https://www.solarsystemscope.com/textures/).
+
 ---
 
 ## Getting Started
