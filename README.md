@@ -48,9 +48,11 @@ No Pinia, no Vue Router, no charting library. Charts are hand-rolled SVG.
 
 No auth tokens. No paid APIs. No backend.
 
-## Texture Credits
+## Credits
 
-The Earth surface texture (`public/textures/8k_earth_daymap.jpg`) is the **8K Earth Day Map** from [Solar System Scope](https://www.solarsystemscope.com/textures/).
+**Earth texture** — The surface texture (`public/textures/8k_earth_daymap.jpg`) is the **8K Earth Day Map** from [Solar System Scope](https://www.solarsystemscope.com/textures/), distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+**Country borders** — Border geometry is sourced from the [`world-atlas`](https://github.com/topojson/world-atlas) npm package (`countries-50m.json`), which is derived from [Natural Earth](https://www.naturalearthdata.com/) data.
 
 ---
 
